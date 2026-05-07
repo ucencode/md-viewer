@@ -499,6 +499,11 @@
 
         .file-chip .chip-del:hover { color: var(--danger); }
 
+        button:disabled { opacity: 0.38; cursor: not-allowed; }
+        button:disabled:hover { border-color: var(--border); color: var(--text); }
+
+        #save-to-doc svg.lucide { width: 12px; height: 12px; }
+
         /* ── Zen overlay exit buttons ── */
         .zen-exit {
             position: fixed;
@@ -600,7 +605,6 @@
         <div class="pane editor-pane">
             <div class="pane-label">Editor
                 <div class="pane-actions">
-                    <!-- future zen buttons go here as another .btn-group -->
                     <div class="btn-group">
                         <button id="editor-scroll-top"   title="Go to top"><i data-lucide="chevrons-up"></i></button>
                         <button id="editor-scroll-caret" title="Go to text cursor"><i data-lucide="text-cursor"></i></button>
@@ -671,7 +675,6 @@ function helloWorld() {
             <button id="copy-html">Copy HTML</button>
             <button id="download-html">Download</button>
             <button id="clear">Clear</button>
-            <button id="save-document">Save</button>
             <span class="word-count" id="word-count">0 words</span>
         </footer>
 
@@ -679,8 +682,10 @@ function helloWorld() {
             <div class="file-panel-row">
                 <span class="file-panel-label">Documents</span>
                 <input type="text" id="document-name" placeholder="Document name">
-                <button id="load-document">Load</button>
-                <button id="delete-document">Delete</button>
+                <button id="save-document" disabled>Save</button>
+                <button id="load-document" disabled>Load</button>
+                <button id="delete-document" disabled>Delete</button>
+                <button id="save-to-doc" style="display:none"><i data-lucide="save"></i> <span id="save-to-doc-label"></span></button>
             </div>
             <div class="file-list" id="file-list"></div>
         </div>
@@ -749,7 +754,7 @@ function helloWorld() {
         const mobileEditorBtn = document.getElementById('mobile-editor-btn');
         const mobilePreviewBtn = document.getElementById('mobile-preview-btn');
 
-        let currentDocument = 'default';
+        let currentDocument = null;
         let saveTimeout;
 
         initDocument();
@@ -792,7 +797,7 @@ function helloWorld() {
             showUnsavedChanges();
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(() => {
-                saveDocumentContent(currentDocument, editor.value);
+                localStorage.setItem('editor_autosave', editor.value);
                 showSaved();
             }, 1000);
         });
@@ -804,6 +809,15 @@ function helloWorld() {
         loadBtn.addEventListener('click', loadDocument);
         deleteBtn.addEventListener('click', deleteDocument);
         themeToggle.addEventListener('click', toggleTheme);
+
+        const saveToDocBtn   = document.getElementById('save-to-doc');
+        const saveToDocLabel = document.getElementById('save-to-doc-label');
+        saveToDocBtn.addEventListener('click', () => {
+            if (!currentDocument) return;
+            saveDocumentContent(currentDocument, editor.value);
+            saveToDocBtn.classList.add('active');
+            setTimeout(() => saveToDocBtn.classList.remove('active'), 1200);
+        });
 
         document.getElementById('editor-scroll-top').addEventListener('click', () => {
             editor.scrollTop = 0;
@@ -1024,37 +1038,52 @@ function helloWorld() {
             }
         }
 
+        documentNameInput.addEventListener('input', () => {
+            const empty = !documentNameInput.value.trim();
+            saveBtn.disabled = empty;
+            loadBtn.disabled = empty;
+            deleteBtn.disabled = empty;
+        });
+
+        function resetPanelInput() {
+            documentNameInput.value = '';
+            saveBtn.disabled = true;
+            loadBtn.disabled = true;
+            deleteBtn.disabled = true;
+        }
+
         function saveDocument() {
             const name = documentNameInput.value.trim();
-            if (!name) { alert('Please enter a document name'); return; }
+            if (!name) return;
             saveDocumentContent(name, editor.value);
             currentDocument = name;
-            updateFileList();
-            documentNameInput.value = '';
+            updateDocIndicator();
+            resetPanelInput();
             showSaved();
         }
 
         function loadDocument() {
             const name = documentNameInput.value.trim();
-            if (!name) { alert('Please enter a document name to load'); return; }
+            if (!name) return;
             const content = localStorage.getItem(`markdown_${name}`);
             if (content === null) { alert(`Document "${name}" not found`); return; }
             editor.value = content;
             currentDocument = name;
+            updateDocIndicator();
             renderMarkdown();
             updateWordCount();
-            documentNameInput.value = '';
+            resetPanelInput();
             showSaved();
         }
 
         function deleteDocument() {
             const name = documentNameInput.value.trim();
-            if (!name) { alert('Please enter a document name to delete'); return; }
+            if (!name) return;
             if (confirm(`Are you sure you want to delete "${name}"?`)) {
                 localStorage.removeItem(`markdown_${name}`);
-                if (currentDocument === name) { currentDocument = 'default'; initDocument(); }
-                updateFileList();
-                documentNameInput.value = '';
+                if (currentDocument === name) currentDocument = null;
+                updateDocIndicator();
+                resetPanelInput();
             }
         }
 
@@ -1063,7 +1092,7 @@ function helloWorld() {
         }
 
         function initDocument() {
-            const saved = localStorage.getItem(`markdown_${currentDocument}`);
+            const saved = localStorage.getItem('editor_autosave');
             if (saved !== null) editor.value = saved;
         }
 
@@ -1131,6 +1160,17 @@ function helloWorld() {
             const dark = document.body.classList.contains('dark-theme');
             applyTheme(dark);
             localStorage.setItem('dark_theme', dark ? 'true' : 'false');
+        }
+
+        function updateDocIndicator() {
+            if (currentDocument) {
+                saveToDocLabel.textContent = `Save to ${currentDocument}?`;
+                saveToDocBtn.style.display = '';
+                lucide.createIcons({ nodes: [saveToDocBtn] });
+            } else {
+                saveToDocBtn.style.display = 'none';
+            }
+            updateFileList();
         }
 
         function showUnsavedChanges() {
@@ -1202,6 +1242,7 @@ ${preview.innerHTML}
         }
 
         lucide.createIcons();
+        updateDocIndicator();
 
         // Load saved theme, fall back to system preference
         const savedTheme = localStorage.getItem('dark_theme');
