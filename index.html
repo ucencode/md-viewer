@@ -11,6 +11,7 @@
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="Markdown Viewer">
     <meta name="twitter:description" content="A clean, browser-based Markdown editor with real-time preview, syntax highlighting, MathJax support, dark mode, and distraction-free zen modes.">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
@@ -33,6 +34,13 @@
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        svg.lucide { display: inline-block; vertical-align: middle; stroke-width: 2; }
+        .pane-actions svg.lucide { width: 14px; height: 14px; }
+        .tools-handle svg.lucide { width: 13px; height: 13px; }
+        .zen-exit svg.lucide { width: 13px; height: 13px; }
+        .chip-del svg.lucide { width: 10px; height: 10px; }
+        #theme-toggle svg.lucide { width: 15px; height: 15px; }
 
         :root {
             --bg: #f4f4f4;
@@ -365,6 +373,7 @@
         }
 
         .tools-drawer.collapsed { max-height: 0; }
+        .tools-drawer.no-transition { transition: none; }
 
         /* ── Bottom bar ── */
         .bottombar {
@@ -542,8 +551,8 @@
         }
     </style>
 </head>
-<body>
-    <button class="zen-exit" id="zen-reader-exit">✕  Exit Reader Zen</button>
+<body class="dark-theme">
+    <button class="zen-exit" id="zen-reader-exit"><i data-lucide="x"></i>  Exit Reader Zen</button>
 
     <header class="topbar">
         <span class="app-title">Markdown Viewer</span>
@@ -556,7 +565,7 @@
         <div class="topbar-actions">
             <button id="dual-mode-btn" title="Toggle split view (available at 768px+)">Dual</button>
             <button id="reader-zen-btn" title="Distraction-free reading (Esc to exit)">Reader Zen</button>
-            <button id="theme-toggle">Dark</button>
+            <button id="theme-toggle" title="Toggle theme"><span id="theme-icon-wrap"><i data-lucide="moon"></i></span></button>
         </div>
     </header>
 
@@ -566,8 +575,8 @@
                 <div class="pane-actions">
                     <!-- future zen buttons go here as another .btn-group -->
                     <div class="btn-group">
-                        <button id="editor-scroll-top"   title="Scroll editor to top">⇈</button>
-                        <button id="editor-scroll-caret" title="Scroll editor to text cursor">⊙</button>
+                        <button id="editor-scroll-top"   title="Scroll editor to top"><i data-lucide="chevrons-up"></i></button>
+                        <button id="editor-scroll-caret" title="Scroll editor to text cursor"><i data-lucide="crosshair"></i></button>
                     </div>
                 </div>
             </div>
@@ -616,8 +625,8 @@ function helloWorld() {
             <div class="pane-label">Preview
                 <div class="pane-actions">
                     <div class="btn-group">
-                        <button id="preview-scroll-top"  title="Scroll preview to top">⇈</button>
-                        <button id="preview-sync-caret"  title="Sync preview to editor cursor">⥮</button>
+                        <button id="preview-scroll-top"  title="Scroll preview to top"><i data-lucide="chevrons-up"></i></button>
+                        <button id="preview-sync-caret"  title="Sync preview to editor cursor"><i data-lucide="arrow-up-down"></i></button>
                     </div>
                 </div>
             </div>
@@ -628,7 +637,7 @@ function helloWorld() {
         </div>
     </main>
 
-    <button class="tools-handle" id="tools-handle">∨ Tools</button>
+    <button class="tools-handle" id="tools-handle"><span id="tools-caret-wrap"><i data-lucide="chevron-down"></i></span> Tools</button>
     <div class="tools-drawer" id="tools-drawer">
         <footer class="bottombar">
             <button id="copy-html">Copy HTML</button>
@@ -701,6 +710,7 @@ function helloWorld() {
         const documentNameInput = document.getElementById('document-name');
         const fileList        = document.getElementById('file-list');
         const themeToggle     = document.getElementById('theme-toggle');
+        const themeIconWrap   = document.getElementById('theme-icon-wrap');
         const saveIndicator   = document.getElementById('save-indicator');
         const wordCount       = document.getElementById('word-count');
         const dualModeBtn     = document.getElementById('dual-mode-btn');
@@ -719,15 +729,24 @@ function helloWorld() {
         renderMarkdown();
         updateWordCount();
 
-        // Tools drawer: default expanded, restore preference
+        const toolsCaretWrap = document.getElementById('tools-caret-wrap');
+
+        function setToolsIcon(collapsed) {
+            toolsCaretWrap.innerHTML = `<i data-lucide="${collapsed ? 'chevron-up' : 'chevron-down'}"></i>`;
+            lucide.createIcons({ nodes: [toolsCaretWrap] });
+        }
+
+        // Tools drawer: default expanded, restore preference (skip animation on load)
+        toolsDrawer.classList.add('no-transition');
         if (localStorage.getItem('toolsOpen') === 'false') {
             toolsDrawer.classList.add('collapsed');
-            toolsHandle.textContent = '∧ Tools';
+            setToolsIcon(true);
         }
+        requestAnimationFrame(() => toolsDrawer.classList.remove('no-transition'));
 
         toolsHandle.addEventListener('click', () => {
             const isCollapsed = toolsDrawer.classList.toggle('collapsed');
-            toolsHandle.textContent = isCollapsed ? '∧ Tools' : '∨ Tools';
+            setToolsIcon(isCollapsed);
             localStorage.setItem('toolsOpen', !isCollapsed);
         });
 
@@ -994,7 +1013,7 @@ function helloWorld() {
 
                 const delA = document.createElement('a');
                 delA.className = 'chip-del';
-                delA.textContent = '✕';
+                delA.innerHTML = '<i data-lucide="x"></i>';
                 delA.addEventListener('click', (e) => {
                     e.preventDefault();
                     documentNameInput.value = name;
@@ -1005,12 +1024,18 @@ function helloWorld() {
                 chip.appendChild(delA);
                 fileList.appendChild(chip);
             });
+            lucide.createIcons({ nodes: Array.from(fileList.querySelectorAll('[data-lucide]')) });
+        }
+
+        function setThemeIcon(dark) {
+            themeIconWrap.innerHTML = `<i data-lucide="${dark ? 'sun' : 'moon'}"></i>`;
+            lucide.createIcons({ nodes: [themeIconWrap] });
         }
 
         function toggleTheme() {
             document.body.classList.toggle('dark-theme');
             const dark = document.body.classList.contains('dark-theme');
-            themeToggle.textContent = dark ? 'Light' : 'Dark';
+            setThemeIcon(dark);
             localStorage.setItem('dark_theme', dark ? 'true' : 'false');
         }
 
@@ -1082,13 +1107,15 @@ ${preview.innerHTML}
 </html>`;
         }
 
+        lucide.createIcons();
+
         // Load saved theme, fall back to system preference
         const savedTheme = localStorage.getItem('dark_theme');
         const prefersDark = savedTheme !== null ? savedTheme === 'true' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDark) {
-            document.body.classList.add('dark-theme');
-            themeToggle.textContent = 'Light';
+        if (!prefersDark) {
+            document.body.classList.remove('dark-theme');
         }
+        setThemeIcon(prefersDark);
     </script>
 </body>
 </html>
