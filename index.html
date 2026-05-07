@@ -335,6 +335,37 @@
         #preview ul, #preview ol { padding-left: 1.6em; margin: 0.6em 0; }
         #preview li { margin: 0.2em 0; }
 
+        /* ── Tools drawer ── */
+        .tools-handle {
+            width: 100%;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 11px;
+            font-family: inherit;
+            color: var(--text-muted);
+            background: var(--bg);
+            border: none;
+            border-top: 1px solid var(--border);
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: color 0.15s, background 0.15s, border-color 0.2s;
+            letter-spacing: 0.04em;
+        }
+
+        .tools-handle:hover { color: var(--text); background: var(--surface); }
+
+        .tools-drawer {
+            overflow: hidden;
+            max-height: 300px;
+            transition: max-height 0.25s ease;
+            flex-shrink: 0;
+        }
+
+        .tools-drawer.collapsed { max-height: 0; }
+
         /* ── Bottom bar ── */
         .bottombar {
             height: var(--bottombar-h);
@@ -455,9 +486,7 @@
 
         /* ── Writer Zen ── */
         body.writer-zen .preview-pane,
-        body.writer-zen .split-divider,
-        body.writer-zen .bottombar,
-        body.writer-zen .file-panel {
+        body.writer-zen .split-divider {
             display: none !important;
         }
 
@@ -475,8 +504,8 @@
         /* ── Reader Zen ── */
         body.reader-zen .editor-pane,
         body.reader-zen .split-divider,
-        body.reader-zen .bottombar,
-        body.reader-zen .file-panel,
+        body.reader-zen .tools-handle,
+        body.reader-zen .tools-drawer,
         body.reader-zen .topbar {
             display: none !important;
         }
@@ -599,22 +628,25 @@ function helloWorld() {
         </div>
     </main>
 
-    <footer class="bottombar">
-        <button id="copy-html">Copy HTML</button>
-        <button id="download-html">Download</button>
-        <button id="clear">Clear</button>
-        <button id="save-document">Save</button>
-        <span class="word-count" id="word-count">0 words</span>
-    </footer>
+    <button class="tools-handle" id="tools-handle">∨ Tools</button>
+    <div class="tools-drawer" id="tools-drawer">
+        <footer class="bottombar">
+            <button id="copy-html">Copy HTML</button>
+            <button id="download-html">Download</button>
+            <button id="clear">Clear</button>
+            <button id="save-document">Save</button>
+            <span class="word-count" id="word-count">0 words</span>
+        </footer>
 
-    <div class="file-panel">
-        <div class="file-panel-row">
-            <span class="file-panel-label">Documents</span>
-            <input type="text" id="document-name" placeholder="Document name">
-            <button id="load-document">Load</button>
-            <button id="delete-document">Delete</button>
+        <div class="file-panel">
+            <div class="file-panel-row">
+                <span class="file-panel-label">Documents</span>
+                <input type="text" id="document-name" placeholder="Document name">
+                <button id="load-document">Load</button>
+                <button id="delete-document">Delete</button>
+            </div>
+            <div class="file-list" id="file-list"></div>
         </div>
-        <div class="file-list" id="file-list"></div>
     </div>
 
     <script>
@@ -674,6 +706,8 @@ function helloWorld() {
         const dualModeBtn     = document.getElementById('dual-mode-btn');
         const readerZenBtn    = document.getElementById('reader-zen-btn');
         const zenReaderExit   = document.getElementById('zen-reader-exit');
+        const toolsHandle     = document.getElementById('tools-handle');
+        const toolsDrawer     = document.getElementById('tools-drawer');
         const mobileEditorBtn = document.getElementById('mobile-editor-btn');
         const mobilePreviewBtn = document.getElementById('mobile-preview-btn');
 
@@ -684,6 +718,18 @@ function helloWorld() {
         updateFileList();
         renderMarkdown();
         updateWordCount();
+
+        // Tools drawer: default expanded, restore preference
+        if (localStorage.getItem('toolsOpen') === 'false') {
+            toolsDrawer.classList.add('collapsed');
+            toolsHandle.textContent = '∧ Tools';
+        }
+
+        toolsHandle.addEventListener('click', () => {
+            const isCollapsed = toolsDrawer.classList.toggle('collapsed');
+            toolsHandle.textContent = isCollapsed ? '∧ Tools' : '∨ Tools';
+            localStorage.setItem('toolsOpen', !isCollapsed);
+        });
 
         // Default to zen; restore dual mode if saved and screen is wide enough
         const savedMode = localStorage.getItem('viewerMode');
