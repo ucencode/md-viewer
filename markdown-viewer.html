@@ -203,6 +203,37 @@
             overflow: auto;
             background: var(--surface);
             transition: background 0.2s;
+            position: relative;
+        }
+
+        #caret-indicator {
+            position: absolute;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            pointer-events: none;
+            z-index: 5;
+            transform: translateY(-50%);
+        }
+
+        .caret-label {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: #fff;
+            background: var(--accent);
+            padding: 2px 7px;
+            border-radius: 3px;
+            white-space: nowrap;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .caret-line {
+            flex: 1;
+            height: 1.5px;
+            background: var(--accent);
+            opacity: 0.5;
         }
 
         #preview {
@@ -465,6 +496,7 @@
 
         body.reader-zen #preview-wrapper { background: var(--surface); }
         body.reader-zen #preview-sync-caret { display: none !important; }
+        body.reader-zen #caret-indicator { display: none !important; }
 
         body.reader-zen #preview {
             padding: 64px 32px 80px;
@@ -552,6 +584,7 @@ function helloWorld() {
                 </div>
             </div>
             <div id="preview-wrapper">
+                <div id="caret-indicator"><span class="caret-label">You are here</span><span class="caret-line"></span></div>
                 <div id="preview"></div>
             </div>
         </div>
@@ -617,6 +650,7 @@ function helloWorld() {
         const editor          = document.getElementById('editor');
         const preview         = document.getElementById('preview');
         const previewWrapper  = document.getElementById('preview-wrapper');
+        const caretIndicator  = document.getElementById('caret-indicator');
         const copyHtmlBtn     = document.getElementById('copy-html');
         const downloadHtmlBtn = document.getElementById('download-html');
         const clearBtn        = document.getElementById('clear');
@@ -712,13 +746,46 @@ function helloWorld() {
             readerZenBtn.classList.remove('active');
         }
 
+        function updateCaretIndicator() {
+            const tokens = marked.lexer(editor.value).filter(t => t.type !== 'space');
+            const children = Array.from(preview.children);
+            if (tokens.length === 0 || children.length === 0) {
+                caretIndicator.style.display = 'none';
+                return;
+            }
+
+            const caretPos = editor.selectionStart;
+            let offset = 0, tokenIndex = 0;
+            for (let i = 0; i < tokens.length; i++) {
+                tokenIndex = i;
+                offset += tokens[i].raw.length;
+                if (offset > caretPos) break;
+            }
+
+            const targetEl = children[Math.min(tokenIndex, children.length - 1)];
+            const wrapperRect = previewWrapper.getBoundingClientRect();
+            const targetRect  = targetEl.getBoundingClientRect();
+            const previewRect = preview.getBoundingClientRect();
+
+            caretIndicator.style.top   = (targetRect.top - wrapperRect.top + previewWrapper.scrollTop) + 'px';
+            caretIndicator.style.left  = (previewRect.left - wrapperRect.left) + 'px';
+            caretIndicator.style.width = previewRect.width + 'px';
+            caretIndicator.style.display = 'flex';
+        }
+
+        document.addEventListener('selectionchange', () => {
+            if (document.activeElement === editor) updateCaretIndicator();
+        });
+
         function renderMarkdown() {
             preview.innerHTML = marked.parse(editor.value);
             document.querySelectorAll('pre code').forEach((block) => {
                 hljs.highlightElement(block);
             });
             if (window.MathJax?.typesetPromise) {
-                MathJax.typesetPromise([preview]);
+                MathJax.typesetPromise([preview]).then(updateCaretIndicator);
+            } else {
+                updateCaretIndicator();
             }
         }
 
