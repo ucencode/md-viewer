@@ -1,35 +1,15 @@
-# Docker
-.DS_Store
-*.swp
-*.swo
-.env
-.env.*
-!.env.example
-.docker/*
-
-# Node (if applicable)
-node_modules/
-npm-debug.log
-
-# Logs
-logs
-*.log
-
-# OS specific
+# OS
 .DS_Store
 Thumbs.db
 
-# Editor directories and files
+# Editor
 .idea
 .vscode
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
+*.swp
+*.swo
 *.sw?
 
-# Local development
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Environment
+.env
+.env.*
+!.env.example
