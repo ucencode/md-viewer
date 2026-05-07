@@ -1,26 +1,39 @@
 # Docker Markdown Viewer
 
-An over-engineered Markdown viewer packaged as a Docker container.
+A Markdown editor focused on comfortable writing and reading — not document management. The primary use case is flexible input with real-time preview: paste, draft, or compose Markdown and see it rendered instantly. Document saving is available as a lightweight snapshot feature, not the main point.
+
+## Design priorities
+
+1. **Editing comfort** — clean editor with auto-save to session state, zen writing mode, caret tracking
+2. **Reading comfort** — distraction-free reader zen, synced scroll, rich copy for pasting rendered content elsewhere
+3. **Flexible input** — works well for one-off use without ever touching the document panel
+4. **Snapshots, not a file manager** — save/load named documents stored in localStorage as a convenience, not a workflow
 
 ## Features
 
+### Editor & preview
 - **Real-time preview** — live Markdown rendering as you type
 - **Syntax highlighting** — code blocks highlighted via Highlight.js with Catppuccin theme (dark/light variants)
-- **Copy button on code blocks** — appears on hover, copies code to clipboard
+- **Copy button on code blocks** — appears on hover
 - **Math support** — inline `\(...\)` and block `\[...\]` LaTeX via MathJax
-- **Dark/light theme** — toggle persists to localStorage; respects `prefers-color-scheme` on first visit
-- **Auto-save** — debounced 1s after typing, with unsaved-changes indicator
-- **Multiple documents** — save, load, and delete named documents stored in localStorage, shown as chips
+- **Rich copy** — copies rendered preview as HTML+text, preserving formatting when pasting into Notion, Docs, etc.
 - **Export to HTML** — copy rendered HTML to clipboard or download as a standalone `.html` file
-- **Dual mode** — split editor/preview side by side
-- **Writer Zen** — fullscreen editor, preview hidden
-- **Reader Zen** — fullscreen preview, editor and topbar hidden (Esc or button to exit)
 - **Caret indicator** — highlights the corresponding preview element while editing
-- **Scroll controls** — in each pane label:
-  - **Editor**: scroll to top, scroll to text cursor
-  - **Preview**: scroll to top, sync scroll to editor cursor position
+- **Scroll controls** — scroll to top or sync to cursor position in either pane
+
+### Modes
+- **Writer Zen** — fullscreen editor, preview hidden
+- **Reader Zen** — fullscreen preview, editor and chrome hidden (Esc or button to exit)
+- **Dual mode** — split editor/preview side by side
+
+### Persistence & documents
+- **Auto-save** — editor state saved to browser storage 1s after typing; survives page reload without any action
+- **Named snapshots** — save the current content as a named document, load or delete from the documents panel
+- **Dark/light theme** — toggle persists to localStorage; respects `prefers-color-scheme` on first visit
 - **Collapsible tools drawer** — hides the bottom toolbar to maximize editing space; state persists
-- **Mobile responsive** — collapses to single pane at ≤768px with Editor/Preview toggle buttons
+
+### Responsive
+- **Mobile** — collapses to single pane at ≤768px with Editor/Preview toggle
 
 ## Getting Started
 
