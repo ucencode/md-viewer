@@ -17,7 +17,6 @@
         typeset: false,
         ready() {
           MathJax.startup.defaultReady();
-          // Typeset whatever is already in the preview when MathJax finishes loading
           const p = document.getElementById('preview');
           if (p) MathJax.typesetPromise([p]);
         }
@@ -26,258 +25,455 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
     <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #f4f4f4;
+            --surface: #ffffff;
+            --border: #e2e2e2;
+            --text: #1a1a1a;
+            --text-muted: #a0a0a0;
+            --accent: #4a8cf7;
+            --danger: #e07b54;
+            --topbar-h: 44px;
+            --bottombar-h: 48px;
+            --label-h: 30px;
+        }
+
+        body.dark-theme {
+            --bg: #1c1c1e;
+            --surface: #28282a;
+            --border: #3c3c3e;
+            --text: #ebebf0;
+            --text-muted: #7c7c80;
+            --accent: #5da4fb;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
             height: 100vh;
-        }
-        
-        header {
-            margin-bottom: 20px;
-        }
-        
-        h1 {
-            margin: 0;
-            color: #2c3e50;
-        }
-        
-        .container {
             display: flex;
-            flex: 1;
-            gap: 20px;
+            flex-direction: column;
+            overflow: hidden;
         }
-        
-        .editor-container, .preview-container {
+
+        /* ── Topbar ── */
+        .topbar {
+            height: var(--topbar-h);
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            gap: 10px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .app-title {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            color: var(--text);
+        }
+
+        .save-indicator {
+            font-size: 11px;
+            color: var(--text-muted);
+            transition: color 0.2s;
+        }
+
+        .save-indicator.unsaved { color: var(--danger); }
+
+        .topbar-spacer { flex: 1; }
+
+        .topbar-actions { display: flex; gap: 6px; }
+
+        /* ── Buttons ── */
+        button {
+            padding: 5px 11px;
+            font-size: 12px;
+            font-family: inherit;
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            white-space: nowrap;
+            line-height: 1.4;
+        }
+
+        button:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        button.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        button.active:hover {
+            opacity: 0.85;
+            color: #fff;
+        }
+
+        /* ── Main split pane ── */
+        .main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .pane {
             flex: 1;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+            min-width: 0;
         }
-        
-        .editor-header, .preview-header {
-            background-color: #f5f5f5;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-bottom: none;
-            border-radius: 5px 5px 0 0;
-            font-weight: bold;
+
+        .pane-label {
+            height: var(--label-h);
+            padding: 0 14px;
+            display: flex;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: var(--text-muted);
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            transition: background 0.2s, border-color 0.2s;
         }
-        
+
+        .split-divider {
+            width: 1px;
+            background: var(--border);
+            flex-shrink: 0;
+            transition: background 0.2s;
+        }
+
+        /* ── Editor ── */
         #editor {
             flex: 1;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 0 0 5px 5px;
-            resize: none;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        
-        #preview {
-            flex: 1;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 0 0 5px 5px;
-            overflow: auto;
-        }
-        
-        .controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 10px;
-        }
-        
-        button {
-            padding: 8px 16px;
-            background-color: #4CAF50;
-            color: white;
+            padding: 18px 20px;
             border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
+            resize: none;
+            outline: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.7;
+            background: var(--surface);
+            color: var(--text);
+            overflow: auto;
+            transition: background 0.2s, color 0.2s;
         }
-        
-        button:hover {
-            background-color: #45a049;
+
+        #editor::placeholder { color: var(--text-muted); }
+
+        /* ── Preview ── */
+        #preview-wrapper {
+            flex: 1;
+            overflow: auto;
+            background: var(--surface);
+            transition: background 0.2s;
         }
-        
-        /* Markdown styles */
+
+        #preview {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 28px 28px 48px;
+            font-size: 15px;
+            line-height: 1.78;
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        #preview h1, #preview h2, #preview h3,
+        #preview h4, #preview h5, #preview h6 {
+            margin-top: 1.4em;
+            margin-bottom: 0.5em;
+            font-weight: 600;
+            line-height: 1.3;
+            color: var(--text);
+        }
+
         #preview h1, #preview h2 {
-            border-bottom: 1px solid #eaecef;
+            border-bottom: 1px solid var(--border);
             padding-bottom: 0.3em;
         }
-        
+
+        #preview h1 { font-size: 1.7em; }
+        #preview h2 { font-size: 1.3em; }
+        #preview h3 { font-size: 1.1em; }
+
+        #preview p { margin: 0.7em 0; }
+
+        #preview a { color: var(--accent); text-decoration: none; }
+        #preview a:hover { text-decoration: underline; }
+
         #preview code {
-            background-color: rgba(27, 31, 35, 0.05);
-            padding: 0.2em 0.4em;
-            border-radius: 3px;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+            font-size: 0.84em;
         }
-        
+
+        body.dark-theme #preview code { background: rgba(255, 255, 255, 0.08); }
+
         #preview pre {
-            background-color: #f6f8fa;
-            border-radius: 3px;
-            padding: 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 14px 16px;
             overflow: auto;
+            margin: 1em 0;
         }
-        
+
+        #preview pre code { background: none; padding: 0; font-size: 0.875em; }
+
         #preview blockquote {
-            padding: 0 1em;
-            color: #6a737d;
-            border-left: 0.25em solid #dfe2e5;
-            margin: 0;
+            margin: 1em 0;
+            padding: 4px 16px;
+            color: var(--text-muted);
+            border-left: 3px solid var(--border);
         }
-        
+
         #preview table {
             border-collapse: collapse;
             width: 100%;
-            margin-bottom: 16px;
+            margin: 1em 0;
+            font-size: 0.9em;
         }
-        
+
         #preview table th, #preview table td {
-            padding: 6px 13px;
-            border: 1px solid #dfe2e5;
-        }
-        
-        #preview table tr {
-            background-color: #fff;
-            border-top: 1px solid #c6cbd1;
-        }
-        
-        #preview table tr:nth-child(2n) {
-            background-color: #f6f8fa;
+            padding: 7px 12px;
+            border: 1px solid var(--border);
+            text-align: left;
         }
 
-        /* Dark mode toggle */
-        .theme-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background-color: #6c757d;
-            color: white;
-            border-radius: 20px;
-            padding: 5px 15px;
+        #preview table th {
+            background: var(--bg);
+            font-weight: 600;
         }
 
-        /* Dark theme */
-        body.dark-theme {
-            background-color: #1a1a1a;
-            color: #e0e0e0;
+        #preview table tr:nth-child(2n) td { background: var(--bg); }
+
+        #preview img { max-width: 100%; border-radius: 4px; }
+
+        #preview hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 2em 0;
         }
 
-        body.dark-theme h1 {
-            color: #90caf9;
+        #preview ul, #preview ol { padding-left: 1.6em; margin: 0.6em 0; }
+        #preview li { margin: 0.2em 0; }
+
+        /* ── Bottom bar ── */
+        .bottombar {
+            height: var(--bottombar-h);
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            gap: 6px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+            transition: background 0.2s, border-color 0.2s;
         }
 
-        body.dark-theme .editor-header, 
-        body.dark-theme .preview-header {
-            background-color: #2c2c2c;
-            color: #e0e0e0;
-            border-color: #444;
+        .word-count {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-left: auto;
         }
 
-        body.dark-theme #editor,
-        body.dark-theme #preview {
-            background-color: #2c2c2c;
-            color: #e0e0e0;
-            border-color: #444;
+        /* ── File panel ── */
+        .file-panel {
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            padding: 10px 14px;
+            flex-shrink: 0;
+            transition: background 0.2s, border-color 0.2s;
         }
 
-        body.dark-theme #preview code {
-            background-color: #3a3a3a;
+        .file-panel-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
         }
 
-        body.dark-theme #preview pre {
-            background-color: #3a3a3a;
+        .file-panel-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: var(--text-muted);
+            margin-right: 2px;
+            white-space: nowrap;
         }
 
-        body.dark-theme #preview blockquote {
-            color: #a0a0a0;
-            border-left-color: #555;
+        .file-panel input[type="text"] {
+            padding: 4px 10px;
+            font-size: 12px;
+            font-family: inherit;
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            outline: none;
+            width: 160px;
+            transition: border-color 0.15s;
         }
 
-        body.dark-theme #preview table th, 
-        body.dark-theme #preview table td {
-            border-color: #444;
-        }
-
-        body.dark-theme #preview table tr {
-            background-color: #2c2c2c;
-            border-top-color: #444;
-        }
-
-        body.dark-theme #preview table tr:nth-child(2n) {
-            background-color: #3a3a3a;
-        }
-
-        /* Auto-save indicator */
-        .save-indicator {
-            margin-left: 10px;
-            font-size: 0.8em;
-            color: #6c757d;
-        }
-
-        body.dark-theme .save-indicator {
-            color: #a0a0a0;
-        }
-
-        /* File management section */
-        .file-management {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-
-        body.dark-theme .file-management {
-            border-color: #444;
-        }
+        .file-panel input[type="text"]:focus { border-color: var(--accent); }
 
         .file-list {
-            margin-top: 10px;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .file-item {
             display: flex;
-            justify-content: space-between;
-            padding: 5px;
-            border-bottom: 1px solid #eee;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 8px;
         }
 
-        body.dark-theme .file-item {
-            border-bottom-color: #444;
+        .file-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px 3px 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 11.5px;
+            color: var(--text);
         }
 
-        .file-item:hover {
-            background-color: #f5f5f5;
+        .file-chip .chip-load {
+            cursor: pointer;
+            color: var(--text);
+            text-decoration: none;
         }
 
-        body.dark-theme .file-item:hover {
-            background-color: #3a3a3a;
+        .file-chip .chip-load:hover { color: var(--accent); }
+
+        .file-chip .chip-del {
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 10px;
+            line-height: 1;
+            text-decoration: none;
         }
+
+        .file-chip .chip-del:hover { color: var(--danger); }
+
+        /* ── Zen overlay exit buttons ── */
+        .zen-exit {
+            position: fixed;
+            top: 14px;
+            right: 16px;
+            z-index: 999;
+            display: none;
+            padding: 5px 13px;
+            font-size: 11.5px;
+            font-family: inherit;
+            background: rgba(0, 0, 0, 0.55);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+            transition: background 0.15s;
+        }
+
+        .zen-exit:hover { background: rgba(0, 0, 0, 0.8); color: #fff; border-color: transparent; }
+
+        /* ── Writer Zen ── */
+        body.writer-zen .preview-pane,
+        body.writer-zen .split-divider,
+        body.writer-zen .bottombar,
+        body.writer-zen .file-panel,
+        body.writer-zen .topbar-actions,
+        body.writer-zen .save-indicator {
+            display: none !important;
+        }
+
+        body.writer-zen .topbar {
+            background: transparent;
+            border-bottom: none;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        body.writer-zen .app-title {
+            opacity: 0.25;
+            font-size: 11px;
+        }
+
+        body.writer-zen .main { height: 100vh; }
+
+        body.writer-zen .editor-pane { background: var(--surface); }
+
+        body.writer-zen #editor {
+            width: 100%;
+            padding-top: 72px;
+            padding-bottom: 48px;
+            padding-inline: max(28px, calc((100% - 644px) / 2));
+            font-size: 14.5px;
+            line-height: 1.85;
+        }
+
+        body.writer-zen #zen-writer-exit { display: block; }
+
+        /* ── Reader Zen ── */
+        body.reader-zen .editor-pane,
+        body.reader-zen .split-divider,
+        body.reader-zen .bottombar,
+        body.reader-zen .file-panel,
+        body.reader-zen .topbar {
+            display: none !important;
+        }
+
+        body.reader-zen .main { height: 100vh; }
+
+        body.reader-zen #preview-wrapper { background: var(--surface); }
+
+        body.reader-zen #preview {
+            padding: 64px 32px 80px;
+            font-size: 17px;
+            line-height: 1.85;
+        }
+
+        body.reader-zen #zen-reader-exit { display: block; }
     </style>
 </head>
 <body>
-    <header>
-        <h1>Markdown Viewer</h1>
-        <p>Enter your Markdown content in the editor and see it rendered in real-time.</p>
-        <button class="theme-toggle" id="theme-toggle">Toggle Dark Mode</button>
+    <button class="zen-exit" id="zen-writer-exit">✕  Exit Writer Zen</button>
+    <button class="zen-exit" id="zen-reader-exit">✕  Exit Reader Zen</button>
+
+    <header class="topbar">
+        <span class="app-title">Markdown Viewer</span>
+        <span class="save-indicator" id="save-indicator">saved</span>
+        <div class="topbar-spacer"></div>
+        <div class="topbar-actions">
+            <button id="writer-zen-btn" title="Distraction-free writing (Esc to exit)">Writer Zen</button>
+            <button id="reader-zen-btn" title="Distraction-free reading (Esc to exit)">Reader Zen</button>
+            <button id="theme-toggle">Dark</button>
+        </div>
     </header>
-    
-    <div class="container">
-        <div class="editor-container">
-            <div class="editor-header">
-                Editor
-                <span class="save-indicator" id="save-indicator">Changes saved locally</span>
-            </div>
-            <textarea id="editor" placeholder="Enter your Markdown here..."># Welcome to Markdown Viewer
+
+    <main class="main">
+        <div class="pane editor-pane">
+            <div class="pane-label">Editor</div>
+            <textarea id="editor" placeholder="Write markdown here..."># Welcome to Markdown Viewer
 
 This is a simple tool that lets you write Markdown and see it rendered in real-time.
 
@@ -289,6 +485,7 @@ This is a simple tool that lets you write Markdown and see it rendered in real-t
 - **Dark mode**: Toggle between light and dark themes
 - **Auto-save**: Your content is automatically saved in your browser
 - **Multiple documents**: Save and manage multiple markdown documents
+- **Zen modes**: Distraction-free writing or reading
 
 ## Example Code
 
@@ -316,27 +513,31 @@ function helloWorld() {
 > This is a blockquote. Markdown is a lightweight markup language with plain-text-formatting syntax.
 </textarea>
         </div>
-        <div class="preview-container">
-            <div class="preview-header">Preview</div>
-            <div id="preview"></div>
+        <div class="split-divider"></div>
+        <div class="pane preview-pane">
+            <div class="pane-label">Preview</div>
+            <div id="preview-wrapper">
+                <div id="preview"></div>
+            </div>
         </div>
-    </div>
-    
-    <div class="controls">
-        <button id="copy-html">Copy HTML</button>
-        <button id="download-html">Download as HTML</button>
-        <button id="clear">Clear Editor</button>
-        <button id="save-document">Save Document</button>
-    </div>
+    </main>
 
-    <div class="file-management">
-        <h3>Saved Documents</h3>
-        <input type="text" id="document-name" placeholder="Document name">
-        <button id="load-document">Load</button>
-        <button id="delete-document">Delete</button>
-        <div class="file-list" id="file-list">
-            <!-- Saved files will be listed here -->
+    <footer class="bottombar">
+        <button id="copy-html">Copy HTML</button>
+        <button id="download-html">Download</button>
+        <button id="clear">Clear</button>
+        <button id="save-document">Save</button>
+        <span class="word-count" id="word-count">0 words</span>
+    </footer>
+
+    <div class="file-panel">
+        <div class="file-panel-row">
+            <span class="file-panel-label">Documents</span>
+            <input type="text" id="document-name" placeholder="Document name">
+            <button id="load-document">Load</button>
+            <button id="delete-document">Delete</button>
         </div>
+        <div class="file-list" id="file-list"></div>
     </div>
 
     <script>
@@ -367,7 +568,6 @@ function helloWorld() {
             }]
         });
 
-        // Initialize marked
         marked.setOptions({
             highlight: function(code, lang) {
                 if (lang && hljs.getLanguage(lang)) {
@@ -379,45 +579,43 @@ function helloWorld() {
             gfm: true
         });
 
-        const editor = document.getElementById('editor');
-        const preview = document.getElementById('preview');
-        const copyHtmlBtn = document.getElementById('copy-html');
+        const editor          = document.getElementById('editor');
+        const preview         = document.getElementById('preview');
+        const copyHtmlBtn     = document.getElementById('copy-html');
         const downloadHtmlBtn = document.getElementById('download-html');
-        const clearBtn = document.getElementById('clear');
-        const saveBtn = document.getElementById('save-document');
-        const loadBtn = document.getElementById('load-document');
-        const deleteBtn = document.getElementById('delete-document');
+        const clearBtn        = document.getElementById('clear');
+        const saveBtn         = document.getElementById('save-document');
+        const loadBtn         = document.getElementById('load-document');
+        const deleteBtn       = document.getElementById('delete-document');
         const documentNameInput = document.getElementById('document-name');
-        const fileList = document.getElementById('file-list');
-        const themeToggle = document.getElementById('theme-toggle');
-        const saveIndicator = document.getElementById('save-indicator');
-        
-        // Current document name
+        const fileList        = document.getElementById('file-list');
+        const themeToggle     = document.getElementById('theme-toggle');
+        const saveIndicator   = document.getElementById('save-indicator');
+        const wordCount       = document.getElementById('word-count');
+        const writerZenBtn    = document.getElementById('writer-zen-btn');
+        const readerZenBtn    = document.getElementById('reader-zen-btn');
+        const zenWriterExit   = document.getElementById('zen-writer-exit');
+        const zenReaderExit   = document.getElementById('zen-reader-exit');
+
         let currentDocument = 'default';
-        
-        // Initialize document
+        let saveTimeout;
+
         initDocument();
         updateFileList();
-        
-        // Initial render
         renderMarkdown();
-        
-        // Auto-save timer
-        let saveTimeout;
-        
-        // Event listeners
+        updateWordCount();
+
         editor.addEventListener('input', () => {
             renderMarkdown();
+            updateWordCount();
             showUnsavedChanges();
-            
-            // Auto-save after 1 second of inactivity
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(() => {
                 saveDocumentContent(currentDocument, editor.value);
                 showSaved();
             }, 1000);
         });
-        
+
         copyHtmlBtn.addEventListener('click', copyHtml);
         downloadHtmlBtn.addEventListener('click', downloadHtml);
         clearBtn.addEventListener('click', clearEditor);
@@ -425,11 +623,39 @@ function helloWorld() {
         loadBtn.addEventListener('click', loadDocument);
         deleteBtn.addEventListener('click', deleteDocument);
         themeToggle.addEventListener('click', toggleTheme);
-        
-        // Functions
+
+        writerZenBtn.addEventListener('click', () => {
+            const entering = !document.body.classList.contains('writer-zen');
+            document.body.classList.remove('reader-zen');
+            document.body.classList.toggle('writer-zen');
+            writerZenBtn.classList.toggle('active', entering);
+            readerZenBtn.classList.remove('active');
+            if (entering) editor.focus();
+        });
+
+        readerZenBtn.addEventListener('click', () => {
+            const entering = !document.body.classList.contains('reader-zen');
+            document.body.classList.remove('writer-zen');
+            document.body.classList.toggle('reader-zen');
+            readerZenBtn.classList.toggle('active', entering);
+            writerZenBtn.classList.remove('active');
+        });
+
+        zenWriterExit.addEventListener('click', exitZen);
+        zenReaderExit.addEventListener('click', exitZen);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') exitZen();
+        });
+
+        function exitZen() {
+            document.body.classList.remove('writer-zen', 'reader-zen');
+            writerZenBtn.classList.remove('active');
+            readerZenBtn.classList.remove('active');
+        }
+
         function renderMarkdown() {
             preview.innerHTML = marked.parse(editor.value);
-            // Apply syntax highlighting to code blocks
             document.querySelectorAll('pre code').forEach((block) => {
                 hljs.highlightElement(block);
             });
@@ -437,181 +663,143 @@ function helloWorld() {
                 MathJax.typesetPromise([preview]);
             }
         }
-        
+
+        function updateWordCount() {
+            const text = editor.value.trim();
+            const words = text ? text.split(/\s+/).length : 0;
+            wordCount.textContent = `${words.toLocaleString()} word${words !== 1 ? 's' : ''}`;
+        }
+
         function copyHtml() {
-            const htmlContent = getFullHtml();
-            navigator.clipboard.writeText(htmlContent)
+            navigator.clipboard.writeText(getFullHtml())
                 .then(() => alert('HTML copied to clipboard!'))
                 .catch(err => console.error('Error copying HTML:', err));
         }
-        
+
         function downloadHtml() {
-            const htmlContent = getFullHtml();
-            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const blob = new Blob([getFullHtml()], { type: 'text/html' });
             const url = URL.createObjectURL(blob);
-            
             const a = document.createElement('a');
             a.href = url;
             a.download = `${currentDocument || 'markdown-export'}.html`;
             document.body.appendChild(a);
             a.click();
-            
-            // Clean up
-            setTimeout(() => {
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }, 0);
+            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 0);
         }
-        
+
         function clearEditor() {
             if (confirm('Are you sure you want to clear the editor?')) {
                 editor.value = '';
                 renderMarkdown();
+                updateWordCount();
                 showUnsavedChanges();
             }
         }
-        
+
         function saveDocument() {
             const name = documentNameInput.value.trim();
-            if (!name) {
-                alert('Please enter a document name');
-                return;
-            }
-            
+            if (!name) { alert('Please enter a document name'); return; }
             saveDocumentContent(name, editor.value);
             currentDocument = name;
             updateFileList();
             documentNameInput.value = '';
             showSaved();
         }
-        
+
         function loadDocument() {
             const name = documentNameInput.value.trim();
-            if (!name) {
-                alert('Please enter a document name to load');
-                return;
-            }
-            
+            if (!name) { alert('Please enter a document name to load'); return; }
             const content = localStorage.getItem(`markdown_${name}`);
-            if (content === null) {
-                alert(`Document "${name}" not found`);
-                return;
-            }
-            
+            if (content === null) { alert(`Document "${name}" not found`); return; }
             editor.value = content;
             currentDocument = name;
             renderMarkdown();
+            updateWordCount();
             documentNameInput.value = '';
             showSaved();
         }
-        
+
         function deleteDocument() {
             const name = documentNameInput.value.trim();
-            if (!name) {
-                alert('Please enter a document name to delete');
-                return;
-            }
-            
+            if (!name) { alert('Please enter a document name to delete'); return; }
             if (confirm(`Are you sure you want to delete "${name}"?`)) {
                 localStorage.removeItem(`markdown_${name}`);
-                if (currentDocument === name) {
-                    currentDocument = 'default';
-                    initDocument();
-                }
+                if (currentDocument === name) { currentDocument = 'default'; initDocument(); }
                 updateFileList();
                 documentNameInput.value = '';
             }
         }
-        
+
         function saveDocumentContent(name, content) {
             localStorage.setItem(`markdown_${name}`, content);
         }
-        
+
         function initDocument() {
-            const defaultContent = localStorage.getItem(`markdown_${currentDocument}`);
-            if (defaultContent !== null) {
-                editor.value = defaultContent;
-            }
+            const saved = localStorage.getItem(`markdown_${currentDocument}`);
+            if (saved !== null) editor.value = saved;
         }
-        
+
         function updateFileList() {
             fileList.innerHTML = '';
-            
-            // Get all keys from localStorage that start with "markdown_"
             const documents = [];
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
-                if (key.startsWith('markdown_')) {
-                    documents.push(key.substring(9)); // Remove "markdown_" prefix
-                }
+                if (key.startsWith('markdown_')) documents.push(key.substring(9));
             }
-            
+
             if (documents.length === 0) {
-                const emptyMessage = document.createElement('div');
-                emptyMessage.textContent = 'No saved documents';
-                fileList.appendChild(emptyMessage);
+                const empty = document.createElement('span');
+                empty.style.cssText = 'font-size:11px;color:var(--text-muted)';
+                empty.textContent = 'No saved documents';
+                fileList.appendChild(empty);
                 return;
             }
-            
+
             documents.sort().forEach(name => {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                
-                const fileName = document.createElement('span');
-                fileName.textContent = name;
-                
-                const actions = document.createElement('div');
-                
-                const loadAction = document.createElement('a');
-                loadAction.href = '#';
-                loadAction.textContent = 'Load';
-                loadAction.addEventListener('click', (e) => {
+                const chip = document.createElement('div');
+                chip.className = 'file-chip';
+
+                const loadA = document.createElement('a');
+                loadA.className = 'chip-load';
+                loadA.textContent = name;
+                loadA.addEventListener('click', (e) => {
                     e.preventDefault();
                     documentNameInput.value = name;
                     loadDocument();
                 });
-                
-                const deleteAction = document.createElement('a');
-                deleteAction.href = '#';
-                deleteAction.textContent = 'Delete';
-                deleteAction.style.marginLeft = '10px';
-                deleteAction.addEventListener('click', (e) => {
+
+                const delA = document.createElement('a');
+                delA.className = 'chip-del';
+                delA.textContent = '✕';
+                delA.addEventListener('click', (e) => {
                     e.preventDefault();
                     documentNameInput.value = name;
                     deleteDocument();
                 });
-                
-                actions.appendChild(loadAction);
-                actions.appendChild(deleteAction);
-                
-                fileItem.appendChild(fileName);
-                fileItem.appendChild(actions);
-                
-                fileList.appendChild(fileItem);
+
+                chip.appendChild(loadA);
+                chip.appendChild(delA);
+                fileList.appendChild(chip);
             });
         }
-        
+
         function toggleTheme() {
             document.body.classList.toggle('dark-theme');
-            
-            // Save theme preference
-            const isDarkTheme = document.body.classList.contains('dark-theme');
-            localStorage.setItem('dark_theme', isDarkTheme ? 'true' : 'false');
+            const dark = document.body.classList.contains('dark-theme');
+            themeToggle.textContent = dark ? 'Light' : 'Dark';
+            localStorage.setItem('dark_theme', dark ? 'true' : 'false');
         }
-        
+
         function showUnsavedChanges() {
-            saveIndicator.textContent = 'Unsaved changes';
-            saveIndicator.style.color = '#dc3545';
+            saveIndicator.textContent = 'unsaved';
+            saveIndicator.classList.add('unsaved');
         }
-        
+
         function showSaved() {
-            saveIndicator.textContent = 'Changes saved locally';
-            saveIndicator.style.color = '#6c757d';
-            if (document.body.classList.contains('dark-theme')) {
-                saveIndicator.style.color = '#a0a0a0';
-            }
+            saveIndicator.textContent = 'saved';
+            saveIndicator.classList.remove('unsaved');
         }
-        
+
         function getFullHtml() {
             return `<!DOCTYPE html>
 <html lang="en">
@@ -621,74 +809,59 @@ function helloWorld() {
     <title>${currentDocument || 'Markdown Export'}</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 800px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.78;
+            color: #1a1a1a;
+            max-width: 700px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 40px 28px 80px;
+            font-size: 16px;
         }
-        
+        h1, h2 { border-bottom: 1px solid #e2e2e2; padding-bottom: 0.3em; }
         code {
-            background-color: rgba(27, 31, 35, 0.05);
-            padding: 0.2em 0.4em;
-            border-radius: 3px;
+            background: rgba(0,0,0,0.05);
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
             font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+            font-size: 0.85em;
         }
-        
         pre {
-            background-color: #f6f8fa;
-            border-radius: 3px;
-            padding: 16px;
+            background: #f4f4f4;
+            border: 1px solid #e2e2e2;
+            border-radius: 6px;
+            padding: 14px 16px;
             overflow: auto;
         }
-        
+        pre code { background: none; padding: 0; }
         blockquote {
-            padding: 0 1em;
-            color: #6a737d;
-            border-left: 0.25em solid #dfe2e5;
-            margin: 0;
+            padding: 4px 16px;
+            color: #999;
+            border-left: 3px solid #e2e2e2;
+            margin: 1em 0;
         }
-        
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-bottom: 16px;
-        }
-        
-        table th, table td {
-            padding: 6px 13px;
-            border: 1px solid #dfe2e5;
-        }
-        
-        table tr {
-            background-color: #fff;
-            border-top: 1px solid #c6cbd1;
-        }
-        
-        table tr:nth-child(2n) {
-            background-color: #f6f8fa;
-        }
+        table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+        table th, table td { padding: 7px 12px; border: 1px solid #e2e2e2; text-align: left; }
+        table th { background: #f4f4f4; font-weight: 600; }
+        table tr:nth-child(2n) td { background: #f9f9f9; }
+        img { max-width: 100%; border-radius: 4px; }
     </style>
     <script>
     window.MathJax = {
-      tex: {
-        inlineMath: [['\\(', '\\)']],
-        displayMath: [['\\[', '\\]']]
-      }
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] }
     };
     <\/script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async><\/script>
 </head>
 <body>
-    ${preview.innerHTML}
+${preview.innerHTML}
 </body>
 </html>`;
         }
-        
-        // Load saved theme preference
+
+        // Load saved theme
         if (localStorage.getItem('dark_theme') === 'true') {
             document.body.classList.add('dark-theme');
+            themeToggle.textContent = 'Light';
         }
     </script>
 </body>
