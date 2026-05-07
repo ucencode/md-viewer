@@ -57,7 +57,7 @@ If you prefer not to use Docker Compose:
 
 ### Project Structure
 
-- `markdown-viewer.html` - The main HTML file containing the Markdown viewer application
+- `index.html` - The main HTML file containing the Markdown viewer application
 - `Dockerfile` - Instructions for building the Docker image
 - `docker-compose.yml` - Configuration for Docker Compose deployment
 

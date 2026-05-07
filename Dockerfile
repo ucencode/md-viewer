@@ -7,7 +7,7 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 
 # Copy the HTML file into the container
-COPY markdown-viewer.html index.html
+COPY index.html index.html
 
 # Expose port 80
 EXPOSE 80
