@@ -14,7 +14,7 @@
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <link id="hljs-theme" rel="stylesheet" href="https://unpkg.com/@catppuccin/highlightjs/css/catppuccin-mocha.css">
     <script>
     window.MathJax = {
       tex: {
@@ -48,7 +48,7 @@
             --border: #e2e2e2;
             --text: #1a1a1a;
             --text-muted: #a0a0a0;
-            --accent: #4a8cf7;
+            --accent: #89b4fa;
             --danger: #e07b54;
             --topbar-h: 44px;
             --bottombar-h: 48px;
@@ -61,7 +61,7 @@
             --border: #3c3c3e;
             --text: #ebebf0;
             --text-muted: #7c7c80;
-            --accent: #5da4fb;
+            --accent: #89b4fa;
         }
 
         body {
@@ -285,25 +285,26 @@
         #preview a:hover { text-decoration: underline; }
 
         #preview code {
-            background: rgba(0, 0, 0, 0.05);
-            padding: 0.15em 0.4em;
-            border-radius: 4px;
             font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
             font-size: 0.84em;
         }
 
-        body.dark-theme #preview code { background: rgba(255, 255, 255, 0.08); }
+        #preview :not(pre) > code {
+            background: rgba(0, 0, 0, 0.06);
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+        }
+
+        body.dark-theme #preview :not(pre) > code { background: rgba(255, 255, 255, 0.08); }
 
         #preview pre {
-            background: var(--bg);
             border: 1px solid var(--border);
             border-radius: 6px;
-            padding: 14px 16px;
             overflow: auto;
             margin: 1em 0;
         }
 
-        #preview pre code { background: none; padding: 0; font-size: 0.875em; }
+        #preview pre code.hljs { display: block; min-width: max-content; border-radius: 5px; font-size: 0.875em; padding: 14px 16px; }
 
         #preview blockquote {
             margin: 1em 0;
@@ -363,7 +364,7 @@
             letter-spacing: 0.04em;
         }
 
-        .tools-handle:hover { color: var(--text); background: var(--surface); }
+        .tools-handle:hover { color: var(--accent); background: var(--surface); }
 
         .tools-drawer {
             overflow: hidden;
@@ -1027,15 +1028,24 @@ function helloWorld() {
             lucide.createIcons({ nodes: Array.from(fileList.querySelectorAll('[data-lucide]')) });
         }
 
+        const hljsTheme = document.getElementById('hljs-theme');
+        const HLJS_DARK  = 'https://unpkg.com/@catppuccin/highlightjs/css/catppuccin-mocha.css';
+        const HLJS_LIGHT = 'https://unpkg.com/@catppuccin/highlightjs/css/catppuccin-latte.css';
+
         function setThemeIcon(dark) {
             themeIconWrap.innerHTML = `<i data-lucide="${dark ? 'sun' : 'moon'}"></i>`;
             lucide.createIcons({ nodes: [themeIconWrap] });
         }
 
+        function applyTheme(dark) {
+            setThemeIcon(dark);
+            hljsTheme.href = dark ? HLJS_DARK : HLJS_LIGHT;
+        }
+
         function toggleTheme() {
             document.body.classList.toggle('dark-theme');
             const dark = document.body.classList.contains('dark-theme');
-            setThemeIcon(dark);
+            applyTheme(dark);
             localStorage.setItem('dark_theme', dark ? 'true' : 'false');
         }
 
@@ -1115,7 +1125,7 @@ ${preview.innerHTML}
         if (!prefersDark) {
             document.body.classList.remove('dark-theme');
         }
-        setThemeIcon(prefersDark);
+        applyTheme(prefersDark);
     </script>
 </body>
 </html>
