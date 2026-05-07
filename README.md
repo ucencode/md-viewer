@@ -4,16 +4,23 @@ An over-engineered Markdown viewer packaged as a Docker container.
 
 ## Features
 
-- Real-time Markdown preview with syntax highlighting
-- MathJax support for inline `\(...\)` and block `\[...\]` math
-- Dark mode toggle
-- Auto-save with unsaved-changes indicator
-- Multiple document management with named saves
-- Export to HTML (copy or download)
-- Writer Zen and Reader Zen distraction-free modes
-- Scroll navigation buttons in each pane label:
+- **Real-time preview** — live Markdown rendering as you type
+- **Syntax highlighting** — code blocks highlighted via Highlight.js with Catppuccin theme (dark/light variants)
+- **Copy button on code blocks** — appears on hover, copies code to clipboard
+- **Math support** — inline `\(...\)` and block `\[...\]` LaTeX via MathJax
+- **Dark/light theme** — toggle persists to localStorage; respects `prefers-color-scheme` on first visit
+- **Auto-save** — debounced 1s after typing, with unsaved-changes indicator
+- **Multiple documents** — save, load, and delete named documents stored in localStorage, shown as chips
+- **Export to HTML** — copy rendered HTML to clipboard or download as a standalone `.html` file
+- **Dual mode** — split editor/preview side by side
+- **Writer Zen** — fullscreen editor, preview hidden
+- **Reader Zen** — fullscreen preview, editor and topbar hidden (Esc or button to exit)
+- **Caret indicator** — highlights the corresponding preview element while editing
+- **Scroll controls** — in each pane label:
   - **Editor**: scroll to top, scroll to text cursor
-  - **Preview**: scroll to top, sync to editor cursor (dual mode only)
+  - **Preview**: scroll to top, sync scroll to editor cursor position
+- **Collapsible tools drawer** — hides the bottom toolbar to maximize editing space; state persists
+- **Mobile responsive** — collapses to single pane at ≤768px with Editor/Preview toggle buttons
 
 ## Getting Started
 
