@@ -153,6 +153,25 @@
             transition: background 0.2s, border-color 0.2s;
         }
 
+        .pane-actions {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 3px;
+        }
+
+        .pane-actions button {
+            padding: 2px 7px;
+            font-size: 13px;
+            line-height: 1;
+            border-radius: 5px;
+        }
+
         .split-divider {
             width: 1px;
             background: var(--border);
@@ -445,6 +464,7 @@
         body.reader-zen .main { height: 100vh; }
 
         body.reader-zen #preview-wrapper { background: var(--surface); }
+        body.reader-zen #preview-sync-caret { display: none !important; }
 
         body.reader-zen #preview {
             padding: 64px 32px 80px;
@@ -472,7 +492,15 @@
 
     <main class="main">
         <div class="pane editor-pane">
-            <div class="pane-label">Editor</div>
+            <div class="pane-label">Editor
+                <div class="pane-actions">
+                    <!-- future zen buttons go here as another .btn-group -->
+                    <div class="btn-group">
+                        <button id="editor-scroll-top"   title="Scroll editor to top">⇈</button>
+                        <button id="editor-scroll-caret" title="Scroll editor to text cursor">⊙</button>
+                    </div>
+                </div>
+            </div>
             <textarea id="editor" placeholder="Write markdown here..."># Welcome to Markdown Viewer
 
 This is a simple tool that lets you write Markdown and see it rendered in real-time.
@@ -515,7 +543,14 @@ function helloWorld() {
         </div>
         <div class="split-divider"></div>
         <div class="pane preview-pane">
-            <div class="pane-label">Preview</div>
+            <div class="pane-label">Preview
+                <div class="pane-actions">
+                    <div class="btn-group">
+                        <button id="preview-scroll-top"  title="Scroll preview to top">⇈</button>
+                        <button id="preview-sync-caret"  title="Sync preview to editor cursor">⥮</button>
+                    </div>
+                </div>
+            </div>
             <div id="preview-wrapper">
                 <div id="preview"></div>
             </div>
@@ -581,6 +616,7 @@ function helloWorld() {
 
         const editor          = document.getElementById('editor');
         const preview         = document.getElementById('preview');
+        const previewWrapper  = document.getElementById('preview-wrapper');
         const copyHtmlBtn     = document.getElementById('copy-html');
         const downloadHtmlBtn = document.getElementById('download-html');
         const clearBtn        = document.getElementById('clear');
@@ -623,6 +659,28 @@ function helloWorld() {
         loadBtn.addEventListener('click', loadDocument);
         deleteBtn.addEventListener('click', deleteDocument);
         themeToggle.addEventListener('click', toggleTheme);
+
+        document.getElementById('editor-scroll-top').addEventListener('click', () => {
+            editor.scrollTop = 0;
+        });
+
+        document.getElementById('editor-scroll-caret').addEventListener('click', () => {
+            editor.scrollTop = getCaretFraction() * (editor.scrollHeight - editor.clientHeight);
+        });
+
+        document.getElementById('preview-scroll-top').addEventListener('click', () => {
+            previewWrapper.scrollTop = 0;
+        });
+
+        document.getElementById('preview-sync-caret').addEventListener('click', () => {
+            previewWrapper.scrollTop = getCaretFraction() * (previewWrapper.scrollHeight - previewWrapper.clientHeight);
+        });
+
+        function getCaretFraction() {
+            const line  = editor.value.substring(0, editor.selectionStart).split('\n').length;
+            const total = editor.value.split('\n').length;
+            return (line - 1) / Math.max(total - 1, 1);
+        }
 
         writerZenBtn.addEventListener('click', () => {
             const entering = !document.body.classList.contains('writer-zen');
