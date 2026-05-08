@@ -38,7 +38,6 @@
         svg.lucide { display: inline-block; vertical-align: middle; stroke-width: 2; }
         .pane-actions svg.lucide { width: 14px; height: 14px; }
         .tools-handle svg.lucide { width: 13px; height: 13px; }
-        .zen-exit svg.lucide { width: 13px; height: 13px; }
         .chip-del svg.lucide { width: 10px; height: 10px; }
         #theme-toggle svg.lucide, #dual-mode-btn svg.lucide { width: 15px; height: 15px; }
 
@@ -504,26 +503,10 @@
 
         #save-to-doc svg.lucide { width: 12px; height: 12px; }
 
-        /* ── Zen overlay exit buttons ── */
-        .zen-exit {
-            position: fixed;
-            top: 35px;
-            right: 20px;
-            z-index: 999;
-            display: none;
-            padding: 5px 13px;
-            font-size: 11.5px;
-            font-family: inherit;
-            background: rgba(0, 0, 0, 0.3);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            backdrop-filter: blur(6px);
-            transition: background 0.15s;
-        }
-
-        .zen-exit:hover { background: rgba(0, 0, 0, 0.8); color: #fff; border-color: transparent; }
+        .btn-separator { width: 1px; background: var(--border); align-self: stretch; margin: 2px 1px; }
+        #zen-reader-exit, .btn-separator:has(+ #zen-reader-exit) { display: none; }
+        body.reader-zen #zen-reader-exit { display: inline-flex; }
+        body.reader-zen .btn-separator:has(+ #zen-reader-exit) { display: block; }
 
         /* ── TOC ── */
         #toc-btn {
@@ -664,7 +647,7 @@
             line-height: 1.85;
         }
 
-        /* ── Reader Zen ── */
+        /* ── Preview ── */
         body.reader-zen .editor-pane,
         body.reader-zen .split-divider,
         body.reader-zen .tools-handle,
@@ -685,28 +668,10 @@
             line-height: 1.85;
         }
 
-        body.reader-zen #zen-reader-exit { display: block; }
 
-        /* ── Mobile: single-pane mode ── */
-        #mobile-pane-toggle { display: none; }
-
-        @media (max-width: 768px) {
-            #mobile-pane-toggle { display: flex; gap: 4px; }
-            #dual-mode-btn, #reader-zen-btn { display: none; }
-            .pane-actions { display: none; }
-            .split-divider { display: none; }
-            .preview-pane { display: none; }
-
-            body.mobile-preview .preview-pane { display: flex; }
-            body.mobile-preview .editor-pane  { display: none; }
-
-            body.writer-zen.mobile-preview .preview-pane { display: flex !important; }
-            body.writer-zen.mobile-preview .editor-pane  { display: none !important; }
-        }
     </style>
 </head>
 <body class="dark-theme">
-    <button class="zen-exit" id="zen-reader-exit"><i data-lucide="x"></i>  Exit Reader Zen</button>
     <div id="editor-spotlight"></div>
     <button id="toc-btn" title="Table of contents"><i data-lucide="list"></i></button>
     <div id="toc-panel">
@@ -717,13 +682,9 @@
         <span class="app-title">Markdown Viewer</span>
         <span class="save-indicator" id="save-indicator">saved</span>
         <div class="topbar-spacer"></div>
-        <div id="mobile-pane-toggle">
-            <button id="mobile-editor-btn" class="active">Editor</button>
-            <button id="mobile-preview-btn">Preview</button>
-        </div>
         <div class="topbar-actions">
             <button id="dual-mode-btn" title="Toggle split view (available at desktop)"><i data-lucide="columns-2"></i></button>
-            <button id="reader-zen-btn" title="Distraction-free reading (Esc to exit)">Reader Zen</button>
+            <button id="reader-zen-btn" title="Distraction-free reading (Esc to exit)">Preview</button>
             <button id="theme-toggle" title="Toggle theme"><span id="theme-icon-wrap"><i data-lucide="moon"></i></span></button>
         </div>
     </header>
@@ -786,6 +747,8 @@ function helloWorld() {
                         <button id="preview-scroll-top"  title="Go to top"><i data-lucide="chevrons-up"></i></button>
                         <button id="preview-sync-caret"  title="Go to editor cursor"><i data-lucide="file-input"></i></button>
                         <button id="preview-copy-rich"   title="Copy preview to clipboard"><i data-lucide="clipboard"></i></button>
+                        <div class="btn-separator"></div>
+                        <button id="zen-reader-exit"     title="Exit Preview"><i data-lucide="x"></i></button>
                     </div>
                 </div>
             </div>
@@ -890,8 +853,6 @@ function helloWorld() {
         const zenReaderExit   = document.getElementById('zen-reader-exit');
         const toolsHandle     = document.getElementById('tools-handle');
         const toolsDrawer     = document.getElementById('tools-drawer');
-        const mobileEditorBtn  = document.getElementById('mobile-editor-btn');
-        const mobilePreviewBtn = document.getElementById('mobile-preview-btn');
         const tocBtn   = document.getElementById('toc-btn');
         const tocPanel = document.getElementById('toc-panel');
         const tocList  = document.getElementById('toc-list');
@@ -925,9 +886,8 @@ function helloWorld() {
             localStorage.setItem('toolsOpen', !isCollapsed);
         });
 
-        // Default to zen; restore dual mode if saved and screen is wide enough
         const savedMode = localStorage.getItem('viewerMode');
-        if (savedMode === 'dual' && window.innerWidth >= 768) {
+        if (savedMode === 'dual') {
             enterDualMode();
         } else {
             enterZenMode();
@@ -1080,18 +1040,6 @@ function helloWorld() {
 
         zenReaderExit.addEventListener('click', exitReaderZen);
 
-        mobileEditorBtn.addEventListener('click', () => {
-            document.body.classList.remove('mobile-preview');
-            mobileEditorBtn.classList.add('active');
-            mobilePreviewBtn.classList.remove('active');
-        });
-
-        mobilePreviewBtn.addEventListener('click', () => {
-            document.body.classList.add('mobile-preview');
-            mobilePreviewBtn.classList.add('active');
-            mobileEditorBtn.classList.remove('active');
-        });
-
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 if (tocPanel.classList.contains('open')) closeToc();
@@ -1189,12 +1137,6 @@ function helloWorld() {
         }
 
         previewWrapper.addEventListener('scroll', scrollspy, { passive: true });
-
-        window.addEventListener('resize', () => {
-            if (window.innerWidth < 768 && !document.body.classList.contains('reader-zen')) {
-                enterZenMode();
-            }
-        });
 
         function updateCaretIndicator() {
             const tokens = marked.lexer(editor.value).filter(t => t.type !== 'space');
