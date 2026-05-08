@@ -45,8 +45,8 @@ A Markdown editor focused on comfortable writing and reading — not document ma
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/docker-markdown-viewer.git
-   cd docker-markdown-viewer
+   git clone https://github.com/ucencode/md-viewer.git
+   cd md-viewer
    ```
 
 2. Build and start the container:
@@ -56,53 +56,16 @@ A Markdown editor focused on comfortable writing and reading — not document ma
 
 3. Access the Markdown viewer in your browser:
    ```
-   http://localhost:8080
-   ```
-
-### Manual Docker Build
-
-If you prefer not to use Docker Compose:
-
-1. Build the Docker image:
-   ```bash
-   docker build -t markdown-viewer .
-   ```
-
-2. Run the container:
-   ```bash
-   docker run -d -p 8080:80 markdown-viewer
+   http://localhost:3301
    ```
 
 ## Development
 
 ### Project Structure
 
-- `index.html` - The main HTML file containing the Markdown viewer application
+- `index.html` — The main application file (editor + preview + all UI)
 - `Dockerfile` - Instructions for building the Docker image
 - `docker-compose.yml` - Configuration for Docker Compose deployment
-
-### Customization
-
-To modify the application:
-
-1. Make changes to `markdown-viewer.html`
-2. Rebuild the Docker image:
-   ```bash
-   docker-compose build
-   # or
-   docker build -t markdown-viewer .
-   ```
-
-3. Restart the container:
-   ```bash
-   docker-compose up -d
-   # or
-   docker run -d -p 8080:80 markdown-viewer
-   ```
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
 
