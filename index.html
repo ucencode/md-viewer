@@ -1090,7 +1090,7 @@ function helloWorld() {
             document.body.classList.toggle('reader-zen');
             readerZenBtn.classList.toggle('active', entering);
             dualModeBtn.classList.remove('active');
-            if (!entering) enterZenMode();
+            if (!entering) restorePrevMode();
         });
 
         zenReaderExit.addEventListener('click', exitReaderZen);
@@ -1102,10 +1102,14 @@ function helloWorld() {
             }
         });
 
+        function restorePrevMode() {
+            localStorage.getItem('viewerMode') === 'dual' && window.innerWidth > 768 ? enterDualMode() : enterZenMode();
+        }
+
         function exitReaderZen() {
             if (document.body.classList.contains('reader-zen')) {
                 closeToc();
-                enterZenMode();
+                restorePrevMode();
             }
         }
 
